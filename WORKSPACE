@@ -2,6 +2,15 @@ workspace(name = "ros2_bazel_unikraft")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
+# NOTE: This is a demonstration/template WORKSPACE file.
+# The SHA256 checksums below are placeholders and must be replaced with actual checksums
+# before building. To get the correct checksum, download the archive and run:
+#   sha256sum <archive.tar.gz>
+# or
+#   shasum -a 256 <archive.tar.gz>
+# Alternatively, you can temporarily remove the sha256 attribute, let Bazel download
+# the file, and it will report the correct checksum in the error message.
+
 # Bazel Skylib - utilities for Bazel rules
 http_archive(
     name = "bazel_skylib",
@@ -23,6 +32,7 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 rules_foreign_cc_dependencies()
 
 # rcutils - ROS2 C utilities
+# TODO: Replace sha256 with actual checksum (see note above)
 http_archive(
     name = "rcutils",
     build_file = "@//:third_party/rcutils.BUILD",
@@ -30,10 +40,11 @@ http_archive(
     urls = [
         "https://github.com/ros2/rcutils/archive/refs/tags/6.2.1.tar.gz",
     ],
-    sha256 = "2e7c3b3e8d4d7e5c6e0e5d9f9d6f8c5d5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+    # sha256 = "TODO: Add actual SHA256 checksum",
 )
 
 # rcl - ROS2 Client Library
+# TODO: Replace sha256 with actual checksum (see note above)
 http_archive(
     name = "rcl",
     build_file = "@//:third_party/rcl.BUILD",
@@ -41,10 +52,11 @@ http_archive(
     urls = [
         "https://github.com/ros2/rcl/archive/refs/tags/6.0.1.tar.gz",
     ],
-    sha256 = "3e7d4e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+    # sha256 = "TODO: Add actual SHA256 checksum",
 )
 
 # rclcpp - ROS2 C++ Client Library
+# TODO: Replace sha256 with actual checksum (see note above)
 http_archive(
     name = "rclcpp",
     build_file = "@//:third_party/rclcpp.BUILD",
@@ -52,10 +64,11 @@ http_archive(
     urls = [
         "https://github.com/ros2/rclcpp/archive/refs/tags/21.0.0.tar.gz",
     ],
-    sha256 = "4e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+    # sha256 = "TODO: Add actual SHA256 checksum",
 )
 
 # rmw - ROS2 Middleware Interface
+# TODO: Replace sha256 with actual checksum (see note above)
 http_archive(
     name = "rmw",
     build_file = "@//:third_party/rmw.BUILD",
@@ -63,10 +76,11 @@ http_archive(
     urls = [
         "https://github.com/ros2/rmw/archive/refs/tags/7.1.0.tar.gz",
     ],
-    sha256 = "5e6e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+    # sha256 = "TODO: Add actual SHA256 checksum",
 )
 
 # rmw_zenoh - Zenoh RMW implementation
+# TODO: Replace sha256 with actual checksum (see note above)
 http_archive(
     name = "rmw_zenoh",
     build_file = "@//:third_party/rmw_zenoh.BUILD",
@@ -74,10 +88,11 @@ http_archive(
     urls = [
         "https://github.com/ros2/rmw_zenoh/archive/refs/tags/0.1.0.tar.gz",
     ],
-    sha256 = "6e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e",
+    # sha256 = "TODO: Add actual SHA256 checksum",
 )
 
 # Zenoh C library
+# TODO: Replace sha256 with actual checksum (see note above)
 http_archive(
     name = "zenoh_c",
     build_file = "@//:third_party/zenoh_c.BUILD",
@@ -85,5 +100,5 @@ http_archive(
     urls = [
         "https://github.com/eclipse-zenoh/zenoh-c/archive/refs/tags/0.10.1-rc.tar.gz",
     ],
-    sha256 = "7e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e8e",
+    # sha256 = "TODO: Add actual SHA256 checksum",
 )

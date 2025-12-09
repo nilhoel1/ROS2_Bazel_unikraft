@@ -1,17 +1,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <chrono>
+#include <cstdlib>
 
 // CRITICAL: Static registration of rmw_zenoh to avoid dlopen
 // This ensures the RMW implementation is linked statically
 extern "C" {
-  // Forward declare the rmw_zenoh implementation functions
-  // These are typically loaded dynamically, but we force static linking
-  
-  // RMW Zenoh implementation entry points
-  void* rmw_zenoh_cpp_get_implementation_identifier();
-  void* rmw_zenoh_cpp_create_node();
-  
   // Static registration constructor
   __attribute__((constructor))
   void register_rmw_zenoh_statically() {
@@ -23,6 +17,7 @@ extern "C" {
     
     // The actual registration happens through the linker
     // by including all symbols from rmw_zenoh in the binary
+    // No explicit function calls needed - static linking handles it
   }
 }
 
