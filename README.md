@@ -2,6 +2,21 @@
 
 Build ROS2 as a statically linked PIE executable using Bazel and deploy on Unikraft.
 
+## Quick Start
+
+```bash
+# Verify your environment
+./verify_setup.sh
+
+# Build the ROS2 node
+make build
+
+# Run on Unikraft (requires QEMU)
+make run
+```
+
+📖 For detailed instructions, see [QUICKSTART.md](QUICKSTART.md)
+
 ## Overview
 
 This repository demonstrates how to build a ROS2 node as a static PIE (Position Independent Executable) binary using Bazel, with rmw_zenoh as the middleware implementation. The resulting binary can be executed on Unikraft, a unikernel operating system.
