@@ -1,0 +1,22 @@
+# Bazel build outputs
+bazel-*
+.bazel*
+
+# Unikraft downloads
+unikraft/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+/tmp/

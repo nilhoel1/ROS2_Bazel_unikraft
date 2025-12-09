@@ -1,0 +1,25 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+# ROS2 Node as Static PIE Binary for Unikraft
+cc_binary(
+    name = "ros2_node",
+    srcs = ["src/main.cpp"],
+    copts = [
+        "-std=c++17",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+    ],
+    linkopts = [
+        "-static-pie",
+        "-pthread",
+        "-lrt",
+        "-ldl",
+    ],
+    linkstatic = True,
+    deps = [
+        "@rclcpp//:rclcpp",
+        "@rmw_zenoh//:rmw_zenoh",
+    ],
+    visibility = ["//visibility:public"],
+)
