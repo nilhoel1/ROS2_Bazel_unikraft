@@ -1,6 +1,13 @@
 # Bazel build outputs
-bazel-*
-.bazel*
+bazel-bin/
+bazel-out/
+bazel-testlogs/
+bazel-ROS2_Bazel_unikraft/
+.bazelignore
+
+# Keep these important config files
+!.bazelrc
+!.bazelversion
 
 # Unikraft downloads
 unikraft/
