@@ -1,4 +1,4 @@
-.PHONY: help build clean run test info build-linux
+.PHONY: help build clean run run-simple test info build-linux
 
 # Default target
 help:
@@ -7,7 +7,8 @@ help:
 	@echo "  make build       - Build the ROS2 node (native, for testing)"
 	@echo "  make build-linux - Build Linux x86_64 static PIE via Docker (for Unikraft)"
 	@echo "  make build-debug - Build with debug symbols"
-	@echo "  make run         - Run the node on Unikraft with QEMU"
+	@echo "  make run         - Run the node on Unikraft with QEMU (uses kraft)"
+	@echo "  make run-simple  - Run the node on Unikraft with QEMU (direct, no kraft)"
 	@echo "  make run-native  - Run the native binary (for testing)"
 	@echo "  make info        - Display information about the built binary"
 	@echo "  make clean       - Clean build artifacts"
@@ -18,7 +19,7 @@ help:
 # Build the ROS2 node (release mode)
 build:
 	@echo "Building ROS2 node (release mode)..."
-	bazel build --config=release //:ros2_node
+	bazel build --override_repository=rules_python=/tmp/bazel_deps/rules_python-0.24.0 --config=release //:ros2_node
 	@echo ""
 	@echo "Build complete! Binary at: bazel-bin/ros2_node"
 	@echo "Run 'make info' to see binary details"
@@ -27,7 +28,7 @@ build:
 # Build with debug symbols
 build-debug:
 	@echo "Building ROS2 node (debug mode)..."
-	bazel build --config=debug //:ros2_node
+	bazel build --override_repository=rules_python=/tmp/bazel_deps/rules_python-0.24.0 --config=debug //:ros2_node
 	@echo ""
 	@echo "Build complete! Binary at: bazel-bin/ros2_node"
 
@@ -63,9 +64,9 @@ info:
 		echo "Binary not found. Run 'make build' first."; \
 	fi
 
-# Run on Unikraft (requires Linux binary)
+# Run on Unikraft (requires Linux binary) using kraft
 run:
-	@echo "Running on Unikraft with QEMU..."
+	@echo "Running on Unikraft with QEMU (kraft method)..."
 	@if [ -f build-linux/ros2_node ]; then \
 		echo "Using Linux binary from build-linux/"; \
 	elif [ -f bazel-bin/ros2_node ]; then \
@@ -75,6 +76,15 @@ run:
 		exit 1; \
 	fi
 	./run_qemu.sh
+
+# Run on Unikraft using simple QEMU (no kraft needed)
+run-simple:
+	@echo "Running on Unikraft with QEMU (simple method)..."
+	@if [ ! -f bazel-bin/ros2_node ]; then \
+		echo "Error: Binary not found. Run 'make build' first."; \
+		exit 1; \
+	fi
+	./run_qemu_simple.sh
 
 # Run the native binary (for local testing, not on Unikraft)
 run-native:
