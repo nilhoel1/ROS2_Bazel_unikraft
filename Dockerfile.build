@@ -1,0 +1,43 @@
+# Dockerfile for cross-compiling ROS2 static PIE binary for Unikraft
+# This builds a Linux x86_64 static PIE binary that can run on Unikraft
+
+FROM --platform=linux/amd64 debian:bookworm-slim
+
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Clear any stale caches and install build dependencies
+RUN rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        g++ \
+        gcc \
+        libc6-dev \
+        lld \
+        curl \
+        wget \
+        git \
+        python3 \
+        openjdk-17-jdk-headless \
+        zip \
+        unzip \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Bazelisk (manages Bazel versions)
+RUN wget -q -O /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64 \
+    && chmod +x /usr/local/bin/bazel
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy the project
+COPY . .
+
+# Build the static PIE binary using LLD linker
+RUN bazel build --config=release --linkopt=-fuse-ld=lld //:ros2_node
+
+# The binary will be at /workspace/bazel-bin/ros2_node
+CMD ["cat", "/workspace/bazel-bin/ros2_node"]

@@ -11,6 +11,18 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 # Alternatively, you can temporarily remove the sha256 attribute, let Bazel download
 # the file, and it will report the correct checksum in the error message.
 
+# Bazel Features - required by rules_python and rules_cc
+http_archive(
+    name = "bazel_features",
+    sha256 = "07271d0f6b12633777b69020c4cb1eb67b1939c0cf84bb3944dc85cc250c0c01",
+    strip_prefix = "bazel_features-1.38.0",
+    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.38.0/bazel_features-v1.38.0.tar.gz",
+)
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
 # Bazel Skylib - utilities for Bazel rules
 http_archive(
     name = "bazel_skylib",
@@ -19,6 +31,26 @@ http_archive(
         "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.2/bazel-skylib-1.4.2.tar.gz",
     ],
 )
+
+# Rules CC - must come before rules_python
+http_archive(
+    name = "rules_cc",
+    sha256 = "bbf1ae2f83305b7053b11e4467d317a7ba3517a12cef608543c1b1c5bf48a4df",
+    strip_prefix = "rules_cc-0.0.16",
+    url = "https://github.com/bazelbuild/rules_cc/releases/download/0.0.16/rules_cc-0.0.16.tar.gz",
+)
+
+# Rules Python
+http_archive(
+    name = "rules_python",
+    sha256 = "9c6e26911a79fbf510a8f06d8eedb40f412023cf7fa6d1461def27116bff022c",
+    strip_prefix = "rules_python-1.1.0",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/1.1.0/rules_python-1.1.0.tar.gz",
+)
+
+load("@rules_python//python:repositories.bzl", "py_repositories")
+
+py_repositories()
 
 # Rules for foreign cc (for CMake-based projects)
 http_archive(

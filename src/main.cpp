@@ -1,66 +1,97 @@
-#include <rclcpp/rclcpp.hpp>
-#include <memory>
-#include <chrono>
-#include <cstdlib>
+// ROS2 Static PIE Binary Demo for Unikraft
+//
+// This is a minimal demonstration of building ROS2-style code as a static PIE binary.
+// Full ROS2 (rclcpp) requires extensive dependencies - this demo uses rcutils to show the concept.
 
-// CRITICAL: Static registration of rmw_zenoh to avoid dlopen
-// This ensures the RMW implementation is linked statically
-extern "C" {
-  // Static registration constructor
-  __attribute__((constructor))
-  void register_rmw_zenoh_statically() {
-    // This function runs before main() and ensures rmw_zenoh is registered
-    // Without dlopen, the RMW implementation needs to be explicitly registered
-    
-    // Set environment variable to specify the RMW implementation
-    setenv("RMW_IMPLEMENTATION", "rmw_zenoh_cpp", 1);
-    
-    // The actual registration happens through the linker
-    // by including all symbols from rmw_zenoh in the binary
-    // No explicit function calls needed - static linking handles it
-  }
+#include <rcutils/logging.h>
+#include <rcutils/logging_macros.h>
+#include <rcutils/error_handling.h>
+#include <rcutils/allocator.h>
+#include <rcutils/time.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+
+static volatile int running = 1;
+
+void signal_handler(int sig) {
+    (void)sig;
+    running = 0;
 }
 
-// Simple ROS2 Node
-class SimpleNode : public rclcpp::Node {
-public:
-  SimpleNode() : Node("simple_ros2_node") {
-    RCLCPP_INFO(this->get_logger(), "Simple ROS2 Node started!");
-    
-    // Create a timer that fires every second
-    timer_ = this->create_wall_timer(
-      std::chrono::seconds(1),
-      std::bind(&SimpleNode::timer_callback, this)
-    );
-    
-    counter_ = 0;
-  }
-
-private:
-  void timer_callback() {
-    counter_++;
-    RCLCPP_INFO(this->get_logger(), "Hello from ROS2! Count: %d", counter_);
-  }
-
-  rclcpp::TimerBase::SharedPtr timer_;
-  int counter_;
-};
-
 int main(int argc, char** argv) {
-  // Initialize ROS2
-  rclcpp::init(argc, argv);
-  
-  // Create and spin the node
-  auto node = std::make_shared<SimpleNode>();
-  
-  RCLCPP_INFO(node->get_logger(), "ROS2 Node initialized with rmw_zenoh (statically linked)");
-  RCLCPP_INFO(node->get_logger(), "Running as Static PIE binary for Unikraft");
-  
-  // Spin the node (this will run until interrupted)
-  rclcpp::spin(node);
-  
-  // Cleanup
-  rclcpp::shutdown();
-  
-  return 0;
+    (void)argc;
+    (void)argv;
+
+    // Setup signal handler
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+
+    // Initialize rcutils logging
+    rcutils_ret_t ret = rcutils_logging_initialize();
+    if (ret != RCUTILS_RET_OK) {
+        fprintf(stderr, "Failed to initialize logging: %d\n", ret);
+        return 1;
+    }
+
+    // Set log level to INFO
+    rcutils_logging_set_default_logger_level(RCUTILS_LOG_SEVERITY_INFO);
+
+    printf("===========================================\n");
+    printf("  ROS2 Static PIE Demo for Unikraft\n");
+    printf("===========================================\n");
+    printf("This binary is statically linked as a PIE\n");
+    printf("and can run on Unikraft unikernel.\n\n");
+
+    RCUTILS_LOG_INFO("ROS2 rcutils logging initialized successfully!");
+    RCUTILS_LOG_INFO("Running main loop (press Ctrl+C to exit)...");
+
+    // Get allocator for demonstration
+    rcutils_allocator_t allocator = rcutils_get_default_allocator();
+
+    // Demonstrate memory allocation
+    void * ptr = allocator.allocate(1024, allocator.state);
+    if (ptr != NULL) {
+        RCUTILS_LOG_INFO("Successfully allocated 1024 bytes");
+        allocator.deallocate(ptr, allocator.state);
+        RCUTILS_LOG_INFO("Memory deallocated");
+    }
+
+    int counter = 0;
+    while (running) {
+        counter++;
+
+        // Get current time
+        rcutils_time_point_value_t now;
+        ret = rcutils_system_time_now(&now);
+        if (ret == RCUTILS_RET_OK) {
+            // Convert to seconds
+            int64_t seconds = now / 1000000000LL;
+            RCUTILS_LOG_INFO("Tick #%d - System time: %lld seconds", counter, (long long)seconds);
+        } else {
+            RCUTILS_LOG_WARN("Could not get system time");
+        }
+
+        // Sleep for 1 second
+        sleep(1);
+
+        // Exit after 5 iterations in demo mode
+        if (counter >= 5) {
+            RCUTILS_LOG_INFO("Demo complete - exiting after 5 iterations");
+            break;
+        }
+    }
+
+    RCUTILS_LOG_INFO("Shutting down...");
+
+    // Cleanup
+    ret = rcutils_logging_shutdown();
+    if (ret != RCUTILS_RET_OK) {
+        fprintf(stderr, "Failed to shutdown logging\n");
+    }
+
+    printf("Goodbye from ROS2 Static PIE Demo!\n");
+    return 0;
 }

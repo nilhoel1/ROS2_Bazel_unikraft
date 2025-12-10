@@ -1,95 +1,100 @@
 #!/bin/bash
 set -e
 
-# Script to download Unikraft app-elfloader kernel and execute ROS2 node
-# This script runs the statically linked ROS2 node on Unikraft using QEMU
+# Script to run ROS2 node on Unikraft using QEMU via kraft
+# This script runs the statically linked ROS2 node on Unikraft using the app-elfloader
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-UNIKRAFT_DIR="${SCRIPT_DIR}/unikraft"
-LOADER_URL="https://builds.unikraft.io/binaries/app-elfloader/0.13.1/elfloader_qemu-x86_64.bin"
-LOADER_IMAGE="${UNIKRAFT_DIR}/elfloader_qemu-x86_64.bin"
-NODE_BINARY="${SCRIPT_DIR}/bazel-bin/ros2_node"
+UNIKRAFT_DIR="${SCRIPT_DIR}/unikraft-app"
+
+# Check for Linux binary first (from Docker build), then native
+if [ -f "${SCRIPT_DIR}/build-linux/ros2_node" ]; then
+    NODE_BINARY="${SCRIPT_DIR}/build-linux/ros2_node"
+    echo "Using Linux binary from Docker build"
+elif [ -f "${SCRIPT_DIR}/bazel-bin/ros2_node" ]; then
+    NODE_BINARY="${SCRIPT_DIR}/bazel-bin/ros2_node"
+    echo "Using native binary (may not work on Unikraft if not Linux ELF)"
+else
+    echo "Error: No binary found. Run 'make build-linux' first."
+    exit 1
+fi
 
 echo "=========================================="
 echo "Unikraft ROS2 Node Runner"
 echo "=========================================="
 
-# Create unikraft directory if it doesn't exist
-if [ ! -d "${UNIKRAFT_DIR}" ]; then
-    echo "Creating Unikraft directory..."
-    mkdir -p "${UNIKRAFT_DIR}"
-fi
-
-# Download Unikraft app-elfloader kernel if not present
-if [ ! -f "${LOADER_IMAGE}" ]; then
-    echo "Downloading Unikraft app-elfloader kernel..."
-    echo "URL: ${LOADER_URL}"
-    
-    if command -v wget &> /dev/null; then
-        wget -O "${LOADER_IMAGE}" "${LOADER_URL}"
-    elif command -v curl &> /dev/null; then
-        curl -L -o "${LOADER_IMAGE}" "${LOADER_URL}"
-    else
-        echo "Error: Neither wget nor curl found. Please install one of them."
-        exit 1
-    fi
-    
-    echo "Downloaded Unikraft kernel to ${LOADER_IMAGE}"
-else
-    echo "Unikraft kernel already exists at ${LOADER_IMAGE}"
-fi
-
-# Check if the ROS2 node binary exists
-if [ ! -f "${NODE_BINARY}" ]; then
-    echo "Error: ROS2 node binary not found at ${NODE_BINARY}"
-    echo "Please build the project first with: bazel build //:ros2_node"
-    exit 1
-fi
-
+# Check binary info
 echo ""
 echo "Binary information:"
 file "${NODE_BINARY}"
-echo ""
 echo "Binary size: $(du -h "${NODE_BINARY}" | cut -f1)"
 echo ""
 
-# Check if qemu-system-x86_64 is available
-if ! command -v qemu-system-x86_64 &> /dev/null; then
-    echo "Error: qemu-system-x86_64 not found. Please install QEMU."
-    echo "On Ubuntu/Debian: sudo apt-get install qemu-system-x86"
-    echo "On macOS: brew install qemu"
+# Verify it's a Linux ELF binary
+if ! file "${NODE_BINARY}" | grep -q "ELF.*Linux"; then
+    echo ""
+    echo "WARNING: Binary is not a Linux ELF executable!"
+    echo "Unikraft requires a Linux x86_64 static binary."
+    echo ""
+    echo "On macOS, run 'make build-linux' to cross-compile via Docker."
     exit 1
 fi
 
-echo "=========================================="
-echo "Launching ROS2 Node on Unikraft..."
-echo "=========================================="
-echo "Kernel: ${LOADER_IMAGE}"
-echo "InitRD: ${NODE_BINARY}"
-echo "Command: /ros2_node"
+# Check if kraft is installed
+if ! command -v kraft &> /dev/null; then
+    echo "kraft CLI not found. Installing..."
+    curl -sSfL https://get.kraftkit.sh | sh
+
+    # Add kraft to PATH for this session
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if ! command -v kraft &> /dev/null; then
+        echo "Error: kraft installation failed or not in PATH."
+        echo "Please install kraft manually: https://unikraft.org/docs/cli/install"
+        echo "After installation, add to PATH: export PATH=\"\$HOME/.local/bin:\$PATH\""
+        exit 1
+    fi
+fi
+
+echo "kraft version: $(kraft version 2>/dev/null || echo 'unknown')"
+
+# Create Unikraft app directory
+rm -rf "${UNIKRAFT_DIR}"
+mkdir -p "${UNIKRAFT_DIR}"
+
+# Copy the binary to the app directory as rootfs
+mkdir -p "${UNIKRAFT_DIR}/rootfs"
+cp "${NODE_BINARY}" "${UNIKRAFT_DIR}/rootfs/ros2_node"
+chmod +x "${UNIKRAFT_DIR}/rootfs/ros2_node"
+
+# Create Kraftfile using base runtime
+cat > "${UNIKRAFT_DIR}/Kraftfile" << 'KRAFTFILE'
+spec: v0.6
+
+runtime: base:latest
+
+rootfs: ./rootfs
+
+cmd: ["/ros2_node"]
+KRAFTFILE
+
 echo ""
-echo "Press Ctrl+C to stop the VM"
+echo "Building Unikraft unikernel with kraft..."
+cd "${UNIKRAFT_DIR}"
+
+# Build the unikernel using kraft
+kraft build --no-cache --arch x86_64 --plat qemu
+
+echo ""
+echo "=========================================="
+echo "Running ROS2 node on Unikraft with QEMU"
 echo "=========================================="
 echo ""
 
-# Run QEMU with Unikraft kernel and ROS2 node as initrd
-# -kernel: Unikraft app-elfloader kernel
-# -initrd: The statically linked ROS2 node binary
-# -append: Command line arguments (path to execute in the initrd)
-# -nographic: Run without graphical display
-# -m: Memory size (512MB should be sufficient)
-# -cpu: CPU type (host if available, otherwise qemu64)
-exec qemu-system-x86_64 \
-    -kernel "${LOADER_IMAGE}" \
-    -initrd "${NODE_BINARY}" \
-    -append "vfs.fstab=[ \"initrd0:/:extract::ramfs=1:\" ] -- /ros2_node" \
-    -nographic \
-    -m 512M \
-    -cpu max \
-    -enable-kvm 2>/dev/null || exec qemu-system-x86_64 \
-    -kernel "${LOADER_IMAGE}" \
-    -initrd "${NODE_BINARY}" \
-    -append "vfs.fstab=[ \"initrd0:/:extract::ramfs=1:\" ] -- /ros2_node" \
-    -nographic \
-    -m 512M \
-    -cpu qemu64
+# Run the unikernel with QEMU
+kraft run --arch x86_64 --plat qemu --memory 512M
+
+echo ""
+echo "=========================================="
+echo "Unikraft execution completed"
+echo "=========================================="
