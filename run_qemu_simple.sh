@@ -1,6 +1,10 @@
 #!/bin/bash
 # Simple QEMU runner for ROS2 node on Unikraft
 # This script runs the ROS2 node directly with QEMU using a pre-built Unikraft kernel
+#
+# NOTE: This script uses --no-check-certificate for wget which is insecure.
+# This is acceptable for development/demo but should be fixed for production.
+# Consider downloading with proper certificate verification.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,5 +1,13 @@
 workspace(name = "ros2_bazel_unikraft")
 
+# NOTE: This WORKSPACE uses local repositories with hardcoded paths in /tmp/bazel_deps
+# This is a workaround for SSL certificate issues in the build environment.
+# For production use, consider:
+#   1. Using environment variables for dependency paths
+#   2. Fixing SSL certificates properly
+#   3. Using Bazel's remote caching or vendoring
+# See BUILD_NOTES.md for details on setting up dependencies.
+
 # Use local repositories to avoid SSL issues
 local_repository(
     name = "bazel_features",
