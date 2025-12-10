@@ -1,0 +1,31 @@
+# Bazel configuration for ROS2 Static PIE builds
+
+# Disable Bzlmod (use WORKSPACE instead)
+common --enable_bzlmod=false
+common --enable_workspace=true
+
+# Use C++17 standard
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+
+# Position Independent Code for PIE
+build --copt=-fPIC
+build --cxxopt=-fPIC
+
+# Linux-specific: static-pie for Unikraft
+# Note: linkopts are specified in BUILD.bazel per target
+
+# Optimization for release builds
+build:release --compilation_mode=opt
+build:release --strip=always
+
+# Debug configuration
+build:debug --compilation_mode=dbg
+build:debug --strip=never
+
+# Warnings
+build --copt=-Wall
+build --copt=-Wextra
+
+# Default to release mode
+build --config=release

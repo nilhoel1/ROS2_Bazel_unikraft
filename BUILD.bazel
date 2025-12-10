@@ -1,0 +1,34 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+# ROS2 Node as Static PIE Binary for Unikraft
+# Using rcutils as a foundation - demonstrates the concept of building
+# ROS2 components as static PIE binaries for Unikraft
+cc_binary(
+    name = "ros2_node",
+    srcs = ["src/main.cpp"],
+    copts = [
+        "-std=c++17",
+        "-fPIC",
+        "-Wall",
+        "-Wextra",
+    ],
+    linkopts = select({
+        "@platforms//os:linux": [
+            "-static-pie",
+            "-pthread",
+            "-lrt",
+            "-ldl",
+        ],
+        "@platforms//os:macos": [
+            "-pthread",
+        ],
+        "//conditions:default": [
+            "-pthread",
+        ],
+    }),
+    linkstatic = True,
+    deps = [
+        "@rcutils//:rcutils",
+    ],
+    visibility = ["//visibility:public"],
+)

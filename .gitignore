@@ -1,0 +1,30 @@
+# Bazel build outputs
+bazel-bin/
+bazel-out/
+bazel-testlogs/
+bazel-ROS2_Bazel_unikraft/
+.bazelignore
+
+# Keep these important config files
+!.bazelrc
+!.bazelversion
+
+# Unikraft downloads
+unikraft/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+/tmp/
+_codeql_detected_source_root
